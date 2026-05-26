@@ -1,65 +1,195 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useEffect } from 'react';
+
+const generateDates = () => {
+  const dates = [];
+  const today = new Date();
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    dates.push({
+      dateObj: d,
+      day: d.toLocaleDateString('en-US', { weekday: 'short' }),
+      num: d.getDate(),
+      fullString: d.toISOString().split('T')[0]
+    });
+  }
+  return dates;
+};
 
 export default function Home() {
+  const [dates] = useState(generateDates());
+  const [selectedDate, setSelectedDate] = useState(dates[0].fullString);
+  const [slots, setSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  
+  const [showModal, setShowModal] = useState(false);
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    async function fetchSlots() {
+      setLoadingSlots(true);
+      try {
+        const res = await fetch(`/api/slots?date=${selectedDate}`);
+        const data = await res.json();
+        setSlots(data.availableSlots || []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingSlots(false);
+      }
+    }
+    fetchSlots();
+  }, [selectedDate]);
+
+  const handleSlotClick = (slot) => {
+    setSelectedSlot(slot);
+    setShowModal(true);
+    setSuccess(false);
+    setError('');
+  };
+
+  const handleBook = async (e) => {
+    e.preventDefault();
+    if (!name || !phone) return;
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          phone,
+          date_string: selectedDate,
+          time_slot: selectedSlot
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess(true);
+        setSlots(slots.filter(s => s !== selectedSlot));
+        setTimeout(() => {
+          setShowModal(false);
+          setName('');
+          setPhone('');
+        }, 2000);
+      } else {
+        setError(data.error || 'Failed to book');
+      }
+    } catch (err) {
+      setError('Network error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.js file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <main className="container mt-4 mb-8">
+      <div className="text-center mb-8">
+        <h1>The Barber</h1>
+        <p style={{ color: '#94a3b8' }}>Select a date and time for your fresh cut.</p>
+      </div>
+
+      <div className="mb-8">
+        <h3 className="form-label">Date</h3>
+        <div className="date-selector">
+          {dates.map((d, i) => (
+            <button
+              key={i}
+              className={`date-btn ${selectedDate === d.fullString ? 'active' : ''}`}
+              onClick={() => { setSelectedDate(d.fullString); setSelectedSlot(null); }}
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              <span className="date-day">{d.day}</span>
+              <span className="date-num">{d.num}</span>
+            </button>
+          ))}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </div>
+
+      <div>
+        <h3 className="form-label">Available Slots</h3>
+        {loadingSlots ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+            <div className="spinner"></div>
+          </div>
+        ) : slots.length === 0 ? (
+          <div className="glass-panel text-center" style={{ padding: '2rem' }}>
+            <p>No slots available for this date.</p>
+          </div>
+        ) : (
+          <div className="slots-grid">
+            {slots.map((slot, i) => (
+              <button
+                key={i}
+                className={`slot-btn ${selectedSlot === slot ? 'selected' : ''}`}
+                onClick={() => handleSlotClick(slot)}
+              >
+                {slot}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {showModal && (
+        <div className="modal-overlay" onClick={() => !isSubmitting && !success && setShowModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <h2 style={{ marginBottom: '1.5rem' }}>Confirm Booking</h2>
+            <p className="mb-4" style={{ color: '#94a3b8' }}>
+              {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} at {selectedSlot}
+            </p>
+
+            {success ? (
+              <div className="glass-panel text-center" style={{ padding: '2rem', borderColor: 'var(--success)' }}>
+                <h3 style={{ color: 'var(--success)', margin: '0 0 0.5rem 0' }}>Booking Confirmed!</h3>
+                <p>See you soon.</p>
+              </div>
+            ) : (
+              <form onSubmit={handleBook}>
+                <div className="form-group">
+                  <label className="form-label">Name</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="John Doe"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Phone Number</label>
+                  <input
+                    type="tel"
+                    className="form-input"
+                    placeholder="(555) 555-5555"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    required
+                  />
+                </div>
+                {error && <p style={{ color: 'var(--danger)', marginBottom: '1rem', fontSize: '0.875rem' }}>{error}</p>}
+                <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                  <button type="button" className="btn" style={{ background: 'var(--secondary)' }} onClick={() => setShowModal(false)} disabled={isSubmitting}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                    {isSubmitting ? <div className="spinner"></div> : 'Book Now'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
         </div>
-      </main>
-    </div>
+      )}
+    </main>
   );
 }

@@ -259,6 +259,7 @@ export default function Home() {
                     placeholder="John Doe"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
+                    autoComplete="name"
                     required
                   />
                 </div>
@@ -281,6 +282,7 @@ export default function Home() {
                       placeholder="12 345 6789"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
+                      autoComplete="tel-national"
                       required
                     />
                   </div>
@@ -326,6 +328,7 @@ export default function Home() {
                     placeholder="12 345 6789"
                     value={myPhoneSearch}
                     onChange={(e) => setMyPhoneSearch(e.target.value)}
+                    autoComplete="tel-national"
                     required
                   />
                 </div>

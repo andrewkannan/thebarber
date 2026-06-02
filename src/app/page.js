@@ -115,12 +115,6 @@ export default function Home() {
           updatedSlots.sort(); 
           setSlots(updatedSlots);
         }
-        setTimeout(() => {
-          setShowModal(false);
-          setName('');
-          setPhone('');
-          setConflictData(null);
-        }, 2000);
       } else {
         setError(data.error || 'Failed to book');
       }
@@ -129,6 +123,13 @@ export default function Home() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleSuccessOk = () => {
+    setShowModal(false);
+    setName('');
+    setPhone('');
+    setConflictData(null);
   };
 
   const loadMyBookings = async (e) => {
@@ -237,10 +238,15 @@ export default function Home() {
                   The <strong style={{ color: 'var(--accent)', fontSize: '1.1rem', padding: '0 0.25rem' }}>Best Barber in the Town</strong><br/>
                   will review and confirm your booking shortly.
                 </p>
-                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '0.75rem 1.5rem', borderRadius: 'var(--radius)', display: 'inline-block' }}>
+                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '0.75rem 1.5rem', borderRadius: 'var(--radius)', display: 'inline-block', marginBottom: '2rem' }}>
                   <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.85rem', fontWeight: '600', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                     Get ready for a fresh cut
                   </p>
+                </div>
+                <div>
+                  <button className="btn btn-primary" onClick={handleSuccessOk}>
+                    OK
+                  </button>
                 </div>
               </div>
             ) : conflictData ? (

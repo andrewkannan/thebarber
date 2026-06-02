@@ -1,7 +1,7 @@
 import './globals.css'
 
 export const metadata = {
-  title: 'The Barber',
+  title: 'Sag The Barber',
   description: 'Sleek & Fast Barber Booking System',
 }
 

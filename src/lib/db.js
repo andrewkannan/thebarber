@@ -43,10 +43,17 @@ export async function initDb() {
       price DECIMAL(10,2) NOT NULL
     );
   `;
+  const createSettingsQuery = `
+    CREATE TABLE IF NOT EXISTS settings (
+      key VARCHAR(50) PRIMARY KEY,
+      value TEXT
+    );
+  `;
   try {
     await query(createBookingsQuery);
     await query(createOverridesQuery);
     await query(createInventoryQuery);
+    await query(createSettingsQuery);
     await query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'PENDING'`);
     await query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS total_price DECIMAL(10,2) DEFAULT 0.00`);
     await query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS billed_items TEXT`);

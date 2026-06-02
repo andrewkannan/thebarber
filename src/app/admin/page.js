@@ -40,6 +40,10 @@ export default function Admin() {
   const [billingBooking, setBillingBooking] = useState(null);
   const [selectedItems, setSelectedItems] = useState({});
 
+  // Settings state
+  const [waTemplate, setWaTemplate] = useState('Hi #name, your slot on #date at #time is confirmed! See you then.');
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+
   const [activeTab, setActiveTab] = useState('bookings');
 
   useEffect(() => {
@@ -49,17 +53,22 @@ export default function Admin() {
   async function fetchData() {
     setLoading(true);
     try {
-      const [bRes, oRes, iRes] = await Promise.all([
+      const [bRes, oRes, iRes, sRes] = await Promise.all([
         fetch('/api/bookings'),
         fetch('/api/admin/overrides'),
-        fetch('/api/inventory')
+        fetch('/api/inventory'),
+        fetch('/api/settings')
       ]);
       const bData = await bRes.json();
       const oData = await oRes.json();
       const iData = await iRes.json();
+      const sData = await sRes.json();
       setBookings(bData.bookings || []);
       setOverrides(oData.overrides || []);
       setInventory(iData.inventory || []);
+      if (sData.settings && sData.settings.wa_template) {
+        setWaTemplate(sData.settings.wa_template);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -101,6 +110,31 @@ export default function Admin() {
       else alert('Failed to update status');
     } catch (err) {
       alert('Error updating status');
+    }
+  };
+
+  const handleConfirmBooking = async (b) => {
+    try {
+      const res = await fetch('/api/bookings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: b.id, status: 'CONFIRMED' })
+      });
+      if (res.ok) {
+        fetchData();
+        let msg = waTemplate;
+        msg = msg.replace(/#name/g, b.name);
+        msg = msg.replace(/#date/g, b.date_string);
+        msg = msg.replace(/#time/g, b.time_slot);
+        
+        const cleanPhone = b.phone.replace(/[^0-9]/g, '');
+        const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+        window.open(waUrl, '_blank');
+      } else {
+        alert('Failed to confirm booking');
+      }
+    } catch (err) {
+      alert('Error confirming booking');
     }
   };
 
@@ -192,6 +226,13 @@ export default function Admin() {
         >
           Slots
         </button>
+        <button 
+          className="btn" 
+          style={{ width: 'auto', background: activeTab === 'settings' ? 'var(--primary)' : 'var(--secondary)', whiteSpace: 'nowrap', padding: '0.5rem 1rem' }}
+          onClick={() => setActiveTab('settings')}
+        >
+          Settings
+        </button>
       </div>
 
       {activeTab === 'bookings' && (
@@ -276,7 +317,7 @@ export default function Admin() {
 
                   {b.status === 'PENDING' && (
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button className="btn btn-primary" style={{ flex: 1, padding: '0.5rem' }} onClick={() => handleUpdateStatus(b.id, 'CONFIRMED')}>Confirm</button>
+                      <button className="btn btn-primary" style={{ flex: 1, padding: '0.5rem' }} onClick={() => handleConfirmBooking(b)}>Confirm</button>
                       <button className="btn" style={{ flex: 1, padding: '0.5rem', background: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)' }} onClick={() => handleUpdateStatus(b.id, 'CANCELLED')}>Cancel</button>
                     </div>
                   )}
@@ -358,6 +399,43 @@ export default function Admin() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {activeTab === 'settings' && (
+        <div className="glass-panel" style={{ padding: '1.5rem' }}>
+          <h2 style={{ marginBottom: '1.5rem' }}>WhatsApp Template</h2>
+          <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1rem' }}>
+            Customize the message sent when you confirm a booking. Available tags: <strong>#name</strong>, <strong>#date</strong>, <strong>#time</strong>
+          </p>
+          <textarea 
+            className="form-input" 
+            rows="4"
+            value={waTemplate}
+            onChange={(e) => setWaTemplate(e.target.value)}
+            style={{ marginBottom: '1rem', resize: 'vertical' }}
+          />
+          <button 
+            className="btn btn-primary" 
+            onClick={async () => {
+              setIsSavingSettings(true);
+              try {
+                await fetch('/api/settings', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ key: 'wa_template', value: waTemplate })
+                });
+                alert('Settings saved!');
+              } catch (e) {
+                alert('Failed to save');
+              }
+              setIsSavingSettings(false);
+            }}
+            disabled={isSavingSettings}
+            style={{ width: 'auto' }}
+          >
+            {isSavingSettings ? 'Saving...' : 'Save Template'}
+          </button>
         </div>
       )}
 

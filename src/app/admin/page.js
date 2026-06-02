@@ -74,6 +74,23 @@ export default function Admin() {
     } catch (err) {}
   };
 
+  const handleUpdateStatus = async (id, newStatus) => {
+    try {
+      const res = await fetch('/api/bookings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: newStatus })
+      });
+      if (res.ok) {
+        fetchData(); // refresh
+      } else {
+        alert('Failed to update status');
+      }
+    } catch (err) {
+      alert('Error updating status');
+    }
+  };
+
   return (
     <main className="container mt-4 mb-8" style={{ maxWidth: '800px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
@@ -110,6 +127,7 @@ export default function Admin() {
                   <th>Time</th>
                   <th>Customer</th>
                   <th>Phone</th>
+                  <th>Status</th>
                   <th>Booked At</th>
                 </tr>
               </thead>
@@ -122,7 +140,7 @@ export default function Admin() {
                   </tr>
                 ) : bookings.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="text-center" style={{ padding: '2rem' }}>
+                    <td colSpan="6" className="text-center" style={{ padding: '2rem' }}>
                       No bookings found.
                     </td>
                   </tr>
@@ -136,6 +154,19 @@ export default function Admin() {
                         {b.is_new && <span className="badge" style={{ marginLeft: '0.5rem', background: 'var(--success)', color: '#fff', fontSize: '0.65rem' }}>NEW</span>}
                       </td>
                       <td style={{ color: '#94a3b8' }}>{b.phone}</td>
+                      <td>
+                        <select 
+                          className="form-input" 
+                          style={{ padding: '0.25rem 0.5rem', width: 'auto', fontSize: '0.875rem' }}
+                          value={b.status || 'PENDING'}
+                          onChange={(e) => handleUpdateStatus(b.id, e.target.value)}
+                        >
+                          <option value="PENDING">Pending</option>
+                          <option value="CONFIRMED">Confirmed</option>
+                          <option value="COMPLETED">Completed</option>
+                          <option value="CANCELLED">Cancelled</option>
+                        </select>
+                      </td>
                       <td style={{ fontSize: '0.875rem', color: '#64748b' }}>
                         {new Date(b.created_at).toLocaleString()}
                       </td>

@@ -18,6 +18,14 @@ const generateDates = () => {
   return dates;
 };
 
+const formatBookingDate = (dateString) => {
+  const [y, m, d] = dateString.split('-');
+  const dateObj = new Date(y, m - 1, d);
+  const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+  const monthName = dateObj.toLocaleDateString('en-US', { month: 'long' });
+  return { dayName, fullDate: `${parseInt(d, 10)} ${monthName} ${y}` };
+};
+
 export default function Home() {
   const [dates] = useState(generateDates());
   const [selectedDate, setSelectedDate] = useState(dates[0].fullString);
@@ -359,21 +367,41 @@ export default function Home() {
                   <p className="text-center" style={{ color: '#94a3b8', margin: 0 }}>No upcoming bookings found.</p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    {myBookings.map(b => (
-                      <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
-                        <div>
-                          <p style={{ fontWeight: '600', margin: '0 0 0.25rem 0' }}>{b.date_string}</p>
-                          <p style={{ color: 'var(--accent)', margin: 0, fontSize: '0.9rem' }}>{b.time_slot}</p>
+                    {myBookings.map(b => {
+                      const dateInfo = formatBookingDate(b.date_string);
+                      return (
+                        <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
+                          <div>
+                            <p style={{ margin: '0', fontSize: '1rem', fontWeight: '500' }}>{dateInfo.dayName}</p>
+                            <p style={{ color: 'var(--accent)', margin: '0.25rem 0', fontSize: '1.2rem', fontWeight: 'bold' }}>{b.time_slot}</p>
+                            <p style={{ margin: '0', color: '#94a3b8', fontSize: '0.85rem' }}>{dateInfo.fullDate}</p>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+                            {b.status === 'CONFIRMED' && (
+                              <span className="badge" style={{ background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', fontSize: '0.7rem' }}>CONFIRMED</span>
+                            )}
+                            {b.status === 'COMPLETED' && (
+                              <span className="badge" style={{ background: 'rgba(148, 163, 184, 0.1)', color: '#94a3b8', fontSize: '0.7rem' }}>COMPLETED</span>
+                            )}
+                            {b.status === 'PENDING' && (
+                              <span className="badge" style={{ background: 'rgba(234, 179, 8, 0.1)', color: '#eab308', fontSize: '0.7rem' }}>PENDING</span>
+                            )}
+                            {b.status === 'CANCELLED' && (
+                              <span className="badge" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', fontSize: '0.7rem' }}>CANCELLED</span>
+                            )}
+                            {b.status !== 'COMPLETED' && b.status !== 'CANCELLED' && (
+                              <button 
+                                className="btn" 
+                                style={{ background: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)', width: 'auto', padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
+                                onClick={() => cancelBooking(b.id)}
+                              >
+                                Cancel
+                              </button>
+                            )}
+                          </div>
                         </div>
-                        <button 
-                          className="btn" 
-                          style={{ background: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)', width: 'auto', padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
-                          onClick={() => cancelBooking(b.id)}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

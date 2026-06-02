@@ -76,3 +76,21 @@ export async function GET() {
     return NextResponse.json({ bookings: [], error: 'Database error' });
   }
 }
+
+export async function PATCH(request) {
+  try {
+    const body = await request.json();
+    const { id, status } = body;
+    if (!id || !status) {
+      return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+    }
+    const res = await query(
+      'UPDATE bookings SET status = $1 WHERE id = $2 RETURNING *',
+      [status, id]
+    );
+    return NextResponse.json({ success: true, booking: res.rows[0] });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}

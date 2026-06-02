@@ -22,6 +22,7 @@ export async function initDb() {
       phone VARCHAR(20) NOT NULL,
       date_string VARCHAR(20) NOT NULL,
       time_slot VARCHAR(20) NOT NULL,
+      status VARCHAR(20) DEFAULT 'PENDING',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(date_string, time_slot)
     );
@@ -38,6 +39,7 @@ export async function initDb() {
   try {
     await query(createBookingsQuery);
     await query(createOverridesQuery);
+    await query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'PENDING'`);
     console.log("Database initialized successfully.");
   } catch (err) {
     console.error("Error initializing database", err);

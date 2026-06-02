@@ -96,7 +96,7 @@ export default function Home() {
     setError('');
 
     try {
-      const cleanPhone = phone.startsWith('0') ? phone.substring(1) : phone;
+      const cleanPhone = (countryCode === '+60' && phone.startsWith('0')) ? phone.substring(1) : phone;
       const fullPhone = `${countryCode} ${cleanPhone}`;
       const res = await fetch('/api/bookings', {
         method: 'POST',
@@ -147,7 +147,7 @@ export default function Home() {
     setLoadingMyBookings(true);
     setHasSearched(true);
     try {
-      const cleanSearch = myPhoneSearch.startsWith('0') ? myPhoneSearch.substring(1) : myPhoneSearch;
+      const cleanSearch = (countryCode === '+60' && myPhoneSearch.startsWith('0')) ? myPhoneSearch.substring(1) : myPhoneSearch;
       const res = await fetch(`/api/my-bookings?phone=${encodeURIComponent(countryCode + ' ' + cleanSearch)}`);
       const data = await res.json();
       setMyBookings(data.bookings || []);

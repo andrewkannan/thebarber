@@ -164,10 +164,7 @@ export default function Admin() {
   return (
     <main className="container mt-4 mb-8" style={{ maxWidth: '600px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h1 style={{ fontSize: '1.5rem', margin: 0 }}>Admin</h1>
-        <button className="btn btn-primary" style={{ width: 'auto', padding: '0.25rem 0.75rem', fontSize: '0.75rem' }} onClick={handleInitDb}>
-          Init DB
-        </button>
+        <h1 style={{ fontSize: '1.5rem', margin: 0 }}>Admin Dashboard</h1>
       </div>
 
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }} className="hide-scrollbar">
@@ -212,7 +209,7 @@ export default function Admin() {
           <div className="glass-panel" style={{ padding: '1rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderColor: 'var(--accent)' }}>
             <div>
               <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Daily Revenue</p>
-              <h2 style={{ margin: 0, color: 'var(--accent)' }}>${dailyRevenue.toFixed(2)}</h2>
+              <h2 style={{ margin: 0, color: 'var(--accent)' }}>RM {dailyRevenue.toFixed(2)}</h2>
             </div>
             <div style={{ textAlign: 'right' }}>
               <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.85rem' }}>{todaysBookings.filter(b => b.status === 'COMPLETED').length} Completed</p>
@@ -242,7 +239,7 @@ export default function Admin() {
                     {b.status === 'COMPLETED' && b.total_price && (
                       <div style={{ textAlign: 'right' }}>
                         <span className="badge" style={{ background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', fontSize: '0.85rem', fontWeight: 'bold' }}>
-                          ${parseFloat(b.total_price).toFixed(2)}
+                          RM {parseFloat(b.total_price).toFixed(2)}
                         </span>
                       </div>
                     )}
@@ -257,7 +254,7 @@ export default function Admin() {
 
                   {b.status === 'CONFIRMED' && (
                     <button className="btn" style={{ width: '100%', padding: '0.5rem', background: 'var(--accent)', color: '#fff' }} onClick={() => openBillingModal(b)}>
-                      Submit Bill
+                      Payment
                     </button>
                   )}
                 </div>
@@ -286,7 +283,7 @@ export default function Admin() {
                 <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--secondary)', padding: '0.75rem 1rem', borderRadius: 'var(--radius)' }}>
                   <span>{item.name}</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <strong>${parseFloat(item.price).toFixed(2)}</strong>
+                    <strong>RM {parseFloat(item.price).toFixed(2)}</strong>
                     <button onClick={() => handleDeleteInventory(item.id)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: '1.25rem' }}>&times;</button>
                   </div>
                 </div>
@@ -339,7 +336,7 @@ export default function Admin() {
       {billingBooking && (
         <div className="modal-overlay" onClick={() => setBillingBooking(null)}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
-            <h2 style={{ marginBottom: '0.5rem' }}>Bill Customer</h2>
+            <h2 style={{ marginBottom: '0.5rem' }}>Payment</h2>
             <p style={{ color: '#94a3b8', marginBottom: '1.5rem' }}>{billingBooking.name} - {billingBooking.time_slot}</p>
 
             {inventory.length === 0 ? (
@@ -357,7 +354,7 @@ export default function Admin() {
                       />
                       <span>{item.name}</span>
                     </div>
-                    <strong>${parseFloat(item.price).toFixed(2)}</strong>
+                    <strong>RM {parseFloat(item.price).toFixed(2)}</strong>
                   </label>
                 ))}
               </div>
@@ -365,7 +362,7 @@ export default function Admin() {
 
             <div style={{ display: 'flex', gap: '1rem' }}>
               <button className="btn" style={{ background: 'transparent', border: '1px solid var(--border)' }} onClick={() => setBillingBooking(null)}>Cancel</button>
-              <button className="btn btn-primary" disabled={inventory.length === 0} onClick={submitBill}>Submit Bill</button>
+              <button className="btn btn-primary" disabled={inventory.length === 0} onClick={submitBill}>Payment</button>
             </div>
           </div>
         </div>

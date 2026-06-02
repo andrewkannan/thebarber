@@ -27,6 +27,7 @@ export default function Home() {
   
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState('');
+  const [countryCode, setCountryCode] = useState('+60');
   const [phone, setPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -67,7 +68,7 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name,
-          phone,
+          phone: `${countryCode} ${phone}`,
           date_string: selectedDate,
           time_slot: selectedSlot
         })
@@ -167,14 +168,26 @@ export default function Home() {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Phone Number</label>
-                  <input
-                    type="tel"
-                    className="form-input"
-                    placeholder="(555) 555-5555"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    required
-                  />
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <select
+                      className="form-input"
+                      style={{ width: 'auto', paddingRight: '1rem', cursor: 'pointer' }}
+                      value={countryCode}
+                      onChange={(e) => setCountryCode(e.target.value)}
+                    >
+                      <option value="+60">🇲🇾 +60</option>
+                      <option value="+65">🇸🇬 +65</option>
+                    </select>
+                    <input
+                      type="tel"
+                      className="form-input"
+                      style={{ flex: 1 }}
+                      placeholder="12 345 6789"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      required
+                    />
+                  </div>
                 </div>
                 {error && <p style={{ color: 'var(--danger)', marginBottom: '1rem', fontSize: '0.875rem' }}>{error}</p>}
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>

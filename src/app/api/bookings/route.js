@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { query, initDb } from '@/lib/db';
 
 export async function POST(request) {
   try {
@@ -46,7 +46,6 @@ export async function POST(request) {
   } catch (err) {
     console.error(err);
     if (err.code === '42P01') { // Postgres relation does not exist
-      const { initDb } = require('@/lib/db');
       await initDb();
       return NextResponse.json({ error: 'Database was uninitialized. We just set it up for you! Please try booking again.' }, { status: 500 });
     }

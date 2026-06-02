@@ -65,6 +65,28 @@ export default function Home() {
     setConflictData(null);
   };
 
+  const groupedSlots = {
+    Morning: [],
+    Afternoon: [],
+    Evening: []
+  };
+
+  slots.forEach(slot => {
+    const isPM = slot.includes('PM');
+    const [time] = slot.split(' ');
+    let [hours] = time.split(':').map(Number);
+    if (isPM && hours !== 12) hours += 12;
+    if (!isPM && hours === 12) hours = 0;
+
+    if (hours < 12) {
+      groupedSlots.Morning.push(slot);
+    } else if (hours < 17) {
+      groupedSlots.Afternoon.push(slot);
+    } else {
+      groupedSlots.Evening.push(slot);
+    }
+  });
+
   const handleBook = async (e, forceReschedule = false) => {
     if (e) e.preventDefault();
     if (!name || !phone) return;
@@ -189,15 +211,22 @@ export default function Home() {
             <p>No slots available for this date.</p>
           </div>
         ) : (
-          <div className="slots-grid">
-            {slots.map((slot, i) => (
-              <button
-                key={i}
-                className={`slot-btn ${selectedSlot === slot ? 'selected' : ''}`}
-                onClick={() => handleSlotClick(slot)}
-              >
-                {slot}
-              </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {Object.entries(groupedSlots).map(([period, periodSlots]) => periodSlots.length > 0 && (
+              <div key={period}>
+                <h4 style={{ color: '#94a3b8', marginBottom: '0.75rem', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{period}</h4>
+                <div className="slots-grid">
+                  {periodSlots.map((slot, i) => (
+                    <button
+                      key={i}
+                      className={`slot-btn ${selectedSlot === slot ? 'selected' : ''}`}
+                      onClick={() => handleSlotClick(slot)}
+                    >
+                      {slot}
+                    </button>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         )}

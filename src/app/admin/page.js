@@ -44,6 +44,11 @@ export default function Admin() {
   const [waTemplate, setWaTemplate] = useState('Hi #name, your slot on #date at #time is confirmed! See you then.');
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
+  // Edit Booking state
+  const [editingBooking, setEditingBooking] = useState(null);
+  const [editForm, setEditForm] = useState({ name: '', phone: '', date_string: '', time_slot: '' });
+  const [editConflict, setEditConflict] = useState(null);
+
   const [activeTab, setActiveTab] = useState('bookings');
 
   useEffect(() => {
@@ -135,6 +140,33 @@ export default function Admin() {
       }
     } catch (err) {
       alert('Error confirming booking');
+    }
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    if (!editForm.name || !editForm.phone || !editForm.date_string || !editForm.time_slot) return;
+    
+    try {
+      const res = await fetch('/api/bookings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingBooking.id,
+          ...editForm
+        })
+      });
+      const data = await res.json();
+      if (res.status === 409 && data.requiresReschedule) {
+        setEditConflict(data.suggestedSlot);
+      } else if (res.ok) {
+        setEditingBooking(null);
+        fetchData();
+      } else {
+        alert(data.error || 'Failed to update booking');
+      }
+    } catch (err) {
+      alert('Network error');
     }
   };
 
@@ -292,21 +324,34 @@ export default function Admin() {
                       </div>
                     </div>
                     <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
-                      <span className="badge" style={{ 
-                        fontSize: '0.75rem', 
-                        background: b.status === 'PENDING' ? 'rgba(234, 179, 8, 0.1)' : 
-                                   b.status === 'CONFIRMED' ? 'rgba(56, 189, 248, 0.1)' :
-                                   b.status === 'COMPLETED' ? 'rgba(34, 197, 94, 0.1)' :
-                                   'rgba(239, 68, 68, 0.1)',
-                        color: b.status === 'PENDING' ? '#eab308' :
-                               b.status === 'CONFIRMED' ? '#38bdf8' :
-                               b.status === 'COMPLETED' ? '#22c55e' :
-                               '#ef4444',
-                        fontWeight: 'bold',
-                        letterSpacing: '0.05em'
-                      }}>
-                        {b.status || 'PENDING'}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <button 
+                          onClick={() => {
+                            setEditingBooking(b);
+                            setEditForm({ name: b.name, phone: b.phone, date_string: b.date_string, time_slot: b.time_slot });
+                            setEditConflict(null);
+                          }}
+                          style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '0.2rem' }}
+                          title="Edit Booking"
+                        >
+                          ✏️
+                        </button>
+                        <span className="badge" style={{ 
+                          fontSize: '0.75rem', 
+                          background: b.status === 'PENDING' ? 'rgba(234, 179, 8, 0.1)' : 
+                                     b.status === 'CONFIRMED' ? 'rgba(56, 189, 248, 0.1)' :
+                                     b.status === 'COMPLETED' ? 'rgba(34, 197, 94, 0.1)' :
+                                     'rgba(239, 68, 68, 0.1)',
+                          color: b.status === 'PENDING' ? '#eab308' :
+                                 b.status === 'CONFIRMED' ? '#38bdf8' :
+                                 b.status === 'COMPLETED' ? '#22c55e' :
+                                 '#ef4444',
+                          fontWeight: 'bold',
+                          letterSpacing: '0.05em'
+                        }}>
+                          {b.status || 'PENDING'}
+                        </span>
+                      </div>
                       {b.status === 'COMPLETED' && b.total_price && (
                         <span style={{ color: '#22c55e', fontSize: '0.9rem', fontWeight: 'bold' }}>
                           RM {parseFloat(b.total_price).toFixed(2)}
@@ -471,6 +516,86 @@ export default function Admin() {
               <button className="btn" style={{ background: 'transparent', border: '1px solid var(--border)' }} onClick={() => setBillingBooking(null)}>Cancel</button>
               <button className="btn btn-primary" disabled={inventory.length === 0} onClick={submitBill}>Payment</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Booking Modal */}
+      {editingBooking && (
+        <div className="modal-overlay" onClick={() => setEditingBooking(null)}>
+          <div className="modal-content glass-panel" onClick={e => e.stopPropagation()}>
+            <h2 style={{ marginBottom: '1.5rem', color: 'var(--accent)' }}>Edit Booking</h2>
+            
+            {editConflict ? (
+              <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                <p style={{ margin: '0 0 1rem 0', color: '#ef4444' }}><strong>Time Slot Unavailable</strong><br/>That time slot is already booked.</p>
+                <p style={{ margin: '0 0 1rem 0', color: 'var(--text)' }}>Suggested alternative: <strong>{editConflict}</strong></p>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => {
+                    setEditForm({ ...editForm, time_slot: editConflict });
+                    setEditConflict(null);
+                  }}>Use {editConflict}</button>
+                  <button className="btn" style={{ flex: 1, background: 'transparent', border: '1px solid var(--text)' }} onClick={() => setEditConflict(null)}>Try Another Time</button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSaveEdit}>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                  required
+                  placeholder="Customer Name"
+                  style={{ marginBottom: '1rem' }}
+                />
+                <input
+                  type="tel"
+                  className="form-input"
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
+                  required
+                  placeholder="Phone Number"
+                  style={{ marginBottom: '1rem' }}
+                />
+                <input
+                  type="date"
+                  className="form-input"
+                  value={editForm.date_string}
+                  onChange={(e) => setEditForm({...editForm, date_string: e.target.value})}
+                  required
+                  style={{ marginBottom: '1rem' }}
+                />
+                <select
+                  className="form-input"
+                  value={editForm.time_slot}
+                  onChange={(e) => setEditForm({...editForm, time_slot: e.target.value})}
+                  style={{ marginBottom: '1.5rem' }}
+                >
+                  {['09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM', '01:00 PM', '01:30 PM', '02:00 PM', '02:30 PM', '03:00 PM', '03:30 PM', '04:00 PM', '04:30 PM', '05:00 PM', '05:30 PM', '06:00 PM', '06:30 PM', '07:00 PM', '07:30 PM', '08:00 PM', '08:30 PM', '09:00 PM'].map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+
+                <button type="submit" className="btn btn-primary" style={{ width: '100%', marginBottom: '1rem' }}>Save Changes</button>
+                
+                {editingBooking.status !== 'CANCELLED' && editingBooking.status !== 'COMPLETED' && (
+                  <button 
+                    type="button" 
+                    className="btn" 
+                    style={{ width: '100%', background: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)' }}
+                    onClick={() => {
+                      if (confirm('Are you sure you want to cancel this booking?')) {
+                        handleUpdateStatus(editingBooking.id, 'CANCELLED');
+                        setEditingBooking(null);
+                      }
+                    }}
+                  >
+                    Cancel Booking
+                  </button>
+                )}
+              </form>
+            )}
           </div>
         </div>
       )}

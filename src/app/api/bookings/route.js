@@ -80,9 +80,35 @@ export async function GET() {
 export async function PATCH(request) {
   try {
     const body = await request.json();
-    const { id, status, total_price, billed_items } = body;
-    if (!id || !status) {
-      return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+    const { id, status, total_price, billed_items, name, phone, date_string, time_slot } = body;
+    if (!id) {
+      return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+    }
+
+    if (name && phone && date_string && time_slot) {
+      const slotCheck = await query('SELECT * FROM bookings WHERE date_string = $1 AND time_slot = $2 AND id != $3', [date_string, time_slot, id]);
+      if (slotCheck.rows.length > 0) {
+        const allSlots = ['09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM', '01:00 PM', '01:30 PM', '02:00 PM', '02:30 PM', '03:00 PM', '03:30 PM', '04:00 PM', '04:30 PM', '05:00 PM', '05:30 PM', '06:00 PM', '06:30 PM', '07:00 PM', '07:30 PM', '08:00 PM', '08:30 PM', '09:00 PM'];
+        const existingOnDate = await query('SELECT time_slot FROM bookings WHERE date_string = $1', [date_string]);
+        const taken = existingOnDate.rows.map(r => r.time_slot);
+        let suggestedSlot = allSlots.find(s => !taken.includes(s)) || 'No slots left on this date';
+        
+        return NextResponse.json({ 
+          error: 'Slot conflict',
+          requiresReschedule: true,
+          suggestedSlot: suggestedSlot
+        }, { status: 409 });
+      }
+
+      const res = await query(
+        'UPDATE bookings SET name = $1, phone = $2, date_string = $3, time_slot = $4 WHERE id = $5 RETURNING *',
+        [name, phone, date_string, time_slot, id]
+      );
+      return NextResponse.json({ success: true, booking: res.rows[0] });
+    }
+
+    if (!status) {
+      return NextResponse.json({ error: 'Missing status' }, { status: 400 });
     }
     
     if (total_price !== undefined && billed_items !== undefined) {

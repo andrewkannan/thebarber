@@ -69,7 +69,10 @@ export default function Admin() {
 
   const todaysBookings = useMemo(() => {
     // Backend sorts by date desc, time desc. We'll reverse it so earliest time is first.
-    return bookings.filter(b => b.date_string === selectedDate).reverse();
+    const daily = bookings.filter(b => b.date_string === selectedDate).reverse();
+    const active = daily.filter(b => b.status !== 'COMPLETED' && b.status !== 'CANCELLED');
+    const inactive = daily.filter(b => b.status === 'COMPLETED' || b.status === 'CANCELLED');
+    return [...active, ...inactive];
   }, [bookings, selectedDate]);
 
   const dailyRevenue = useMemo(() => {
@@ -223,14 +226,11 @@ export default function Admin() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {todaysBookings.map((b) => (
-                <div key={b.id} className="glass-panel" style={{ padding: '1.25rem' }}>
+                <div key={b.id} className="glass-panel" style={{ padding: '1.25rem', opacity: (b.status === 'COMPLETED' || b.status === 'CANCELLED') ? 0.6 : 1, filter: (b.status === 'COMPLETED' || b.status === 'CANCELLED') ? 'grayscale(100%)' : 'none' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                     <div>
                       <h3 style={{ margin: '0 0 0.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         {b.time_slot}
-                        {(b.status === 'COMPLETED' || b.status === 'CANCELLED') && (
-                          <span className="badge" style={{ fontSize: '0.65rem', background: 'var(--secondary)', color: '#94a3b8' }}>{b.status}</span>
-                        )}
                         {b.is_new && <span className="badge" style={{ fontSize: '0.65rem', background: 'var(--success)', color: '#fff' }}>NEW</span>}
                       </h3>
                       <p style={{ margin: 0, fontWeight: '500' }}>{b.name}</p>
@@ -250,13 +250,28 @@ export default function Admin() {
                         </a>
                       </div>
                     </div>
-                    {b.status === 'COMPLETED' && b.total_price && (
-                      <div style={{ textAlign: 'right' }}>
-                        <span className="badge" style={{ background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', fontSize: '0.85rem', fontWeight: 'bold' }}>
+                    <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+                      <span className="badge" style={{ 
+                        fontSize: '0.75rem', 
+                        background: b.status === 'PENDING' ? 'rgba(234, 179, 8, 0.1)' : 
+                                   b.status === 'CONFIRMED' ? 'rgba(56, 189, 248, 0.1)' :
+                                   b.status === 'COMPLETED' ? 'rgba(34, 197, 94, 0.1)' :
+                                   'rgba(239, 68, 68, 0.1)',
+                        color: b.status === 'PENDING' ? '#eab308' :
+                               b.status === 'CONFIRMED' ? '#38bdf8' :
+                               b.status === 'COMPLETED' ? '#22c55e' :
+                               '#ef4444',
+                        fontWeight: 'bold',
+                        letterSpacing: '0.05em'
+                      }}>
+                        {b.status || 'PENDING'}
+                      </span>
+                      {b.status === 'COMPLETED' && b.total_price && (
+                        <span style={{ color: '#22c55e', fontSize: '0.9rem', fontWeight: 'bold' }}>
                           RM {parseFloat(b.total_price).toFixed(2)}
                         </span>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
 
                   {b.status === 'PENDING' && (

@@ -230,12 +230,18 @@ export default function Home() {
             </p>
 
             {success ? (
-              <div className="glass-panel text-center" style={{ padding: '2rem', borderColor: 'var(--success)' }}>
-                <h3 style={{ color: 'var(--success)', margin: '0 0 1rem 0' }}>Booking Submitted!</h3>
-                <p style={{ marginBottom: '1rem', lineHeight: '1.6' }}>
-                  <strong style={{ color: 'var(--accent)', fontSize: '1.1rem', display: 'block', marginBottom: '0.25rem' }}>Best Barber in the Town</strong> 
-                  will confirm your booking shortly.
+              <div className="glass-panel text-center" style={{ padding: '2.5rem 1.5rem', borderColor: 'var(--success)', animation: 'slideUp 0.3s ease-out' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✂️</div>
+                <h3 style={{ color: 'var(--success)', margin: '0 0 1.25rem 0', fontSize: '1.5rem' }}>Your slot is locked in!</h3>
+                <p style={{ marginBottom: '1.5rem', lineHeight: '1.6', fontSize: '1rem' }}>
+                  The <strong style={{ color: 'var(--accent)', fontSize: '1.1rem', padding: '0 0.25rem' }}>Best Barber in the Town</strong><br/>
+                  will review and confirm your booking shortly.
                 </p>
+                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '0.75rem 1.5rem', borderRadius: 'var(--radius)', display: 'inline-block' }}>
+                  <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.85rem', fontWeight: '600', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                    Get ready for a fresh cut
+                  </p>
+                </div>
               </div>
             ) : conflictData ? (
               <div className="glass-panel" style={{ padding: '1.5rem', borderColor: 'var(--accent)' }}>

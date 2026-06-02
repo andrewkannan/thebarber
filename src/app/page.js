@@ -231,8 +231,11 @@ export default function Home() {
 
             {success ? (
               <div className="glass-panel text-center" style={{ padding: '2rem', borderColor: 'var(--success)' }}>
-                <h3 style={{ color: 'var(--success)', margin: '0 0 0.5rem 0' }}>Booking Confirmed!</h3>
-                <p>See you soon.</p>
+                <h3 style={{ color: 'var(--success)', margin: '0 0 1rem 0' }}>Booking Submitted!</h3>
+                <p style={{ marginBottom: '1rem', lineHeight: '1.6' }}>
+                  <strong style={{ color: 'var(--accent)', fontSize: '1.1rem', display: 'block', marginBottom: '0.25rem' }}>Best Barber in the Town</strong> 
+                  will confirm your booking shortly.
+                </p>
               </div>
             ) : conflictData ? (
               <div className="glass-panel" style={{ padding: '1.5rem', borderColor: 'var(--accent)' }}>

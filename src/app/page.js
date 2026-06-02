@@ -10,8 +10,8 @@ const generateDates = () => {
     d.setDate(today.getDate() + i);
     dates.push({
       dateObj: d,
-      day: d.toLocaleDateString('en-US', { weekday: 'short' }),
-      num: d.getDate(),
+      day: i === 0 ? '' : d.toLocaleDateString('en-US', { weekday: 'short' }),
+      num: i === 0 ? 'Today' : d.getDate(),
       fullString: d.toISOString().split('T')[0]
     });
   }

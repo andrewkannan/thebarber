@@ -45,10 +45,15 @@ export async function POST(request) {
     return NextResponse.json({ success: true, booking: res.rows[0] });
   } catch (err) {
     console.error(err);
+    if (err.code === '42P01') { // Postgres relation does not exist
+      const { initDb } = require('@/lib/db');
+      await initDb();
+      return NextResponse.json({ error: 'Database was uninitialized. We just set it up for you! Please try booking again.' }, { status: 500 });
+    }
     if (err.code === '23505') { 
       return NextResponse.json({ error: 'Time slot already booked' }, { status: 400 });
     }
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 });
   }
 }
 

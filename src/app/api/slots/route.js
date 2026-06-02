@@ -19,11 +19,38 @@ export async function GET(request) {
   try {
     const res = await query('SELECT time_slot FROM bookings WHERE date_string = $1', [date]);
     const bookedSlots = res.rows.map(row => row.time_slot);
-    const availableSlots = ALL_SLOTS.filter(slot => !bookedSlots.includes(slot));
+
+    let blockedSlots = [];
+    let addedSlots = [];
+
+    try {
+      const overrideRes = await query('SELECT time_slot, override_type FROM slot_overrides WHERE date_string = $1', [date]);
+      blockedSlots = overrideRes.rows.filter(r => r.override_type === 'BLOCKED').map(r => r.time_slot);
+      addedSlots = overrideRes.rows.filter(r => r.override_type === 'ADDED').map(r => r.time_slot);
+    } catch(e) {
+      // overrides table might not exist yet if not initialized, ignore safely
+    }
+
+    let finalSlots = [...new Set([...ALL_SLOTS, ...addedSlots])];
+    
+    // Sort chronologically
+    finalSlots.sort((a, b) => {
+      const parseTime = (t) => {
+        const [time, period] = t.split(' ');
+        let [h, m] = time.split(':').map(Number);
+        if (period === 'PM' && h !== 12) h += 12;
+        if (period === 'AM' && h === 12) h = 0;
+        return h * 60 + m;
+      };
+      return parseTime(a) - parseTime(b);
+    });
+
+    const unavailable = new Set([...bookedSlots, ...blockedSlots]);
+    const availableSlots = finalSlots.filter(slot => !unavailable.has(slot));
+
     return NextResponse.json({ availableSlots });
   } catch (err) {
     console.error(err);
-    // Return all slots if table doesn't exist yet, or fail
     return NextResponse.json({ availableSlots: ALL_SLOTS, error: err.message });
   }
 }

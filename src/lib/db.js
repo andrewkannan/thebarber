@@ -15,7 +15,7 @@ export async function query(text, params) {
 }
 
 export async function initDb() {
-  const createTableQuery = `
+  const createBookingsQuery = `
     CREATE TABLE IF NOT EXISTS bookings (
       id SERIAL PRIMARY KEY,
       name VARCHAR(100) NOT NULL,
@@ -26,8 +26,18 @@ export async function initDb() {
       UNIQUE(date_string, time_slot)
     );
   `;
+  const createOverridesQuery = `
+    CREATE TABLE IF NOT EXISTS slot_overrides (
+      id SERIAL PRIMARY KEY,
+      date_string VARCHAR(20) NOT NULL,
+      time_slot VARCHAR(20) NOT NULL,
+      override_type VARCHAR(20) NOT NULL,
+      UNIQUE(date_string, time_slot)
+    );
+  `;
   try {
-    await query(createTableQuery);
+    await query(createBookingsQuery);
+    await query(createOverridesQuery);
     console.log("Database initialized successfully.");
   } catch (err) {
     console.error("Error initializing database", err);

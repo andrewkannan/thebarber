@@ -80,15 +80,24 @@ export async function GET() {
 export async function PATCH(request) {
   try {
     const body = await request.json();
-    const { id, status } = body;
+    const { id, status, total_price, billed_items } = body;
     if (!id || !status) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
     }
-    const res = await query(
-      'UPDATE bookings SET status = $1 WHERE id = $2 RETURNING *',
-      [status, id]
-    );
-    return NextResponse.json({ success: true, booking: res.rows[0] });
+    
+    if (total_price !== undefined && billed_items !== undefined) {
+      const res = await query(
+        'UPDATE bookings SET status = $1, total_price = $2, billed_items = $3 WHERE id = $4 RETURNING *',
+        [status, total_price, JSON.stringify(billed_items), id]
+      );
+      return NextResponse.json({ success: true, booking: res.rows[0] });
+    } else {
+      const res = await query(
+        'UPDATE bookings SET status = $1 WHERE id = $2 RETURNING *',
+        [status, id]
+      );
+      return NextResponse.json({ success: true, booking: res.rows[0] });
+    }
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

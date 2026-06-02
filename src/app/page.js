@@ -65,27 +65,21 @@ export default function Home() {
     setConflictData(null);
   };
 
-  const groupedSlots = {
-    Morning: [],
-    Afternoon: [],
-    Evening: []
-  };
-
-  slots.forEach(slot => {
+  const getSlotStyle = (slot) => {
+    if (selectedSlot === slot) return {};
     const isPM = slot.includes('PM');
-    const [time] = slot.split(' ');
-    let [hours] = time.split(':').map(Number);
+    let [hours] = slot.split(' ')[0].split(':').map(Number);
     if (isPM && hours !== 12) hours += 12;
     if (!isPM && hours === 12) hours = 0;
 
     if (hours < 12) {
-      groupedSlots.Morning.push(slot);
+      return { borderLeft: '3px solid #facc15' }; // Morning (Yellow)
     } else if (hours < 17) {
-      groupedSlots.Afternoon.push(slot);
+      return { borderLeft: '3px solid #38bdf8' }; // Afternoon (Blue)
     } else {
-      groupedSlots.Evening.push(slot);
+      return { borderLeft: '3px solid #a78bfa' }; // Evening (Purple)
     }
-  });
+  };
 
   const handleBook = async (e, forceReschedule = false) => {
     if (e) e.preventDefault();
@@ -211,22 +205,16 @@ export default function Home() {
             <p>No slots available for this date.</p>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {Object.entries(groupedSlots).map(([period, periodSlots]) => periodSlots.length > 0 && (
-              <div key={period}>
-                <h4 style={{ color: '#94a3b8', marginBottom: '0.75rem', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{period}</h4>
-                <div className="slots-grid">
-                  {periodSlots.map((slot, i) => (
-                    <button
-                      key={i}
-                      className={`slot-btn ${selectedSlot === slot ? 'selected' : ''}`}
-                      onClick={() => handleSlotClick(slot)}
-                    >
-                      {slot}
-                    </button>
-                  ))}
-                </div>
-              </div>
+          <div className="slots-grid">
+            {slots.map((slot, i) => (
+              <button
+                key={i}
+                className={`slot-btn ${selectedSlot === slot ? 'selected' : ''}`}
+                style={getSlotStyle(slot)}
+                onClick={() => handleSlotClick(slot)}
+              >
+                {slot}
+              </button>
             ))}
           </div>
         )}

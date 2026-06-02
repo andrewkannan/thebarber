@@ -10,7 +10,7 @@ const generateDates = () => {
     d.setDate(today.getDate() + i);
     dates.push({
       dateObj: d,
-      day: i === 0 ? '' : d.toLocaleDateString('en-US', { weekday: 'short' }),
+      day: d.toLocaleDateString('en-US', { weekday: 'short' }),
       num: i === 0 ? 'Today' : d.getDate(),
       fullString: d.toISOString().split('T')[0]
     });
@@ -109,7 +109,7 @@ export default function Home() {
               onClick={() => { setSelectedDate(d.fullString); setSelectedSlot(null); }}
             >
               <span className="date-day">{d.day}</span>
-              <span className="date-num">{d.num}</span>
+              <span className="date-num" style={d.num === 'Today' ? { fontSize: '1rem' } : {}}>{d.num}</span>
             </button>
           ))}
         </div>

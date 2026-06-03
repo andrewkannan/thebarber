@@ -319,6 +319,17 @@ export default function Admin() {
     setBillingBooking(null);
   };
 
+  const convertTo12Hour = (time24) => {
+    if (!time24) return '';
+    let [h, m] = time24.split(':').map(Number);
+    const period = h >= 12 ? 'PM' : 'AM';
+    if (h === 0) h = 12;
+    if (h > 12) h -= 12;
+    const hStr = h.toString().padStart(2, '0');
+    const mStr = m.toString().padStart(2, '0');
+    return `${hStr}:${mStr} ${period}`;
+  };
+
   return (
     <main className="container mt-4 mb-8" style={{ maxWidth: '600px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -551,12 +562,14 @@ export default function Admin() {
                 </div>
 
                 <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
-                  <input type="text" className="form-input" placeholder="e.g. 08:15 AM" value={weeklyCustomSlot} onChange={e => setWeeklyCustomSlot(e.target.value)} />
+                  <input type="time" className="form-input" value={weeklyCustomSlot} onChange={e => setWeeklyCustomSlot(e.target.value)} />
                   <button className="btn btn-primary" style={{ width: 'auto', padding: '0 1rem' }} onClick={() => {
                     if (!weeklyCustomSlot) return;
+                    const formatted = convertTo12Hour(weeklyCustomSlot);
+                    if (!formatted) return;
                     const currentSlots = weeklySchedule[selectedDay] || [];
-                    if (!currentSlots.includes(weeklyCustomSlot)) {
-                      setWeeklySchedule({ ...weeklySchedule, [selectedDay]: [...currentSlots, weeklyCustomSlot] });
+                    if (!currentSlots.includes(formatted)) {
+                      setWeeklySchedule({ ...weeklySchedule, [selectedDay]: [...currentSlots, formatted] });
                     }
                     setWeeklyCustomSlot('');
                   }}>+</button>
@@ -630,15 +643,17 @@ export default function Admin() {
                 <form onSubmit={async (e) => {
                   e.preventDefault();
                   if (!overrideTime) return;
+                  const formatted = convertTo12Hour(overrideTime);
+                  if (!formatted) return;
                   await fetch('/api/admin/overrides', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ date_string: specificDate, time_slot: overrideTime, override_type: 'ADDED' })
+                    body: JSON.stringify({ date_string: specificDate, time_slot: formatted, override_type: 'ADDED' })
                   });
                   setOverrideTime('');
                   fetchData();
                 }} style={{ display: 'flex', gap: '1rem' }}>
-                  <input type="text" className="form-input" placeholder="Add custom slot (e.g. 08:15 AM)" value={overrideTime} onChange={e => setOverrideTime(e.target.value)} />
+                  <input type="time" className="form-input" value={overrideTime} onChange={e => setOverrideTime(e.target.value)} />
                   <button type="submit" className="btn btn-primary" style={{ width: 'auto', padding: '0 1rem' }}>+</button>
                 </form>
               </div>

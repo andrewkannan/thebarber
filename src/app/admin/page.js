@@ -47,9 +47,11 @@ export default function Admin() {
   // Inventory state
   const [invName, setInvName] = useState('');
   const [invPrice, setInvPrice] = useState('');
+  const [invCategory, setInvCategory] = useState('Services');
   const [editingInvId, setEditingInvId] = useState(null);
   const [editInvNameState, setEditInvNameState] = useState('');
   const [editInvPriceState, setEditInvPriceState] = useState('');
+  const [editInvCategoryState, setEditInvCategoryState] = useState('Services');
 
   // Billing Modal state
   const [billingBooking, setBillingBooking] = useState(null);
@@ -269,10 +271,10 @@ export default function Admin() {
       const res = await fetch('/api/inventory', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: invName, price: parseFloat(invPrice) })
+        body: JSON.stringify({ name: invName, price: parseFloat(invPrice), category: invCategory || 'Services' })
       });
       if (res.ok) {
-        setInvName(''); setInvPrice(''); fetchData();
+        setInvName(''); setInvPrice(''); setInvCategory('Services'); fetchData();
       }
     } catch (err) {}
   };
@@ -291,7 +293,7 @@ export default function Admin() {
       const res = await fetch('/api/inventory', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, name: editInvNameState, price: parseFloat(editInvPriceState) })
+        body: JSON.stringify({ id, name: editInvNameState, price: parseFloat(editInvPriceState), category: editInvCategoryState || 'Services' })
       });
       if (res.ok) {
         setEditingInvId(null);
@@ -501,39 +503,49 @@ export default function Admin() {
       {activeTab === 'inventory' && (
         <div className="glass-panel" style={{ padding: '1.5rem' }}>
           <h2 style={{ marginBottom: '1.5rem' }}>Inventory</h2>
-          <form onSubmit={handleAddInventory} style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
-            <div style={{ flex: 2 }}>
-              <input type="text" className="form-input" placeholder="Service Name" value={invName} onChange={e => setInvName(e.target.value)} required />
-            </div>
-            <div style={{ flex: 1 }}>
-              <input type="number" step="0.01" className="form-input" placeholder="Price" value={invPrice} onChange={e => setInvPrice(e.target.value)} required />
-            </div>
-            <button type="submit" className="btn btn-primary" style={{ width: 'auto', padding: '0 1rem' }}>Add</button>
+          <form onSubmit={handleAddInventory} style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+            <input type="text" className="form-input" placeholder="Service Name" value={invName} onChange={e => setInvName(e.target.value)} required style={{ flex: '1 1 200px' }} />
+            <input type="text" className="form-input" placeholder="Category (e.g. Services, Packages)" value={invCategory} onChange={e => setInvCategory(e.target.value)} required style={{ flex: '1 1 150px' }} />
+            <input type="number" step="0.01" className="form-input" placeholder="Price" value={invPrice} onChange={e => setInvPrice(e.target.value)} required style={{ flex: '1 1 100px' }} />
+            <button type="submit" className="btn btn-primary" style={{ flex: '0 0 auto', width: 'auto', padding: '0 1rem' }}>Add</button>
           </form>
 
           {inventory.length === 0 ? <p style={{ color: '#94a3b8' }}>No items in inventory.</p> : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {inventory.map(item => (
-                <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--secondary)', padding: '0.75rem 1rem', borderRadius: 'var(--radius)' }}>
-                  {editingInvId === item.id ? (
-                    <div style={{ display: 'flex', gap: '0.5rem', width: '100%', alignItems: 'center' }}>
-                      <input type="text" className="form-input" value={editInvNameState} onChange={e => setEditInvNameState(e.target.value)} style={{ padding: '0.25rem 0.5rem', flex: 2, height: '32px' }} />
-                      <input type="number" step="0.01" className="form-input" value={editInvPriceState} onChange={e => setEditInvPriceState(e.target.value)} style={{ padding: '0.25rem 0.5rem', flex: 1, height: '32px' }} />
-                      <button onClick={() => handleSaveEditInventory(item.id)} className="btn btn-primary" style={{ padding: '0 0.75rem', width: 'auto', height: '32px', fontSize: '0.85rem' }}>Save</button>
-                      <button onClick={() => setEditingInvId(null)} className="btn" style={{ padding: '0 0.75rem', width: 'auto', background: 'transparent', border: '1px solid var(--border)', height: '32px', fontSize: '0.85rem' }}>Cancel</button>
-                    </div>
-                  ) : (
-                    <>
-                      <span>{item.name}</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <strong>RM {parseFloat(item.price).toFixed(2)}</strong>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                          <button onClick={() => { setEditingInvId(item.id); setEditInvNameState(item.name); setEditInvPriceState(item.price); }} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '1.25rem' }}>&#9998;</button>
-                          <button onClick={() => handleDeleteInventory(item.id)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: '1.25rem' }}>&times;</button>
-                        </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              {Object.entries(inventory.reduce((acc, item) => {
+                const cat = item.category || 'Services';
+                if (!acc[cat]) acc[cat] = [];
+                acc[cat].push(item);
+                return acc;
+              }, {})).map(([categoryName, items]) => (
+                <div key={categoryName}>
+                  <h3 style={{ fontSize: '1rem', color: 'var(--accent)', marginBottom: '0.75rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.25rem' }}>{categoryName}</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {items.map(item => (
+                      <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--secondary)', padding: '0.75rem 1rem', borderRadius: 'var(--radius)' }}>
+                        {editingInvId === item.id ? (
+                          <div style={{ display: 'flex', gap: '0.5rem', width: '100%', alignItems: 'center', flexWrap: 'wrap' }}>
+                            <input type="text" className="form-input" value={editInvNameState} onChange={e => setEditInvNameState(e.target.value)} style={{ padding: '0.25rem 0.5rem', flex: '1 1 120px', height: '32px' }} placeholder="Name" />
+                            <input type="text" className="form-input" value={editInvCategoryState} onChange={e => setEditInvCategoryState(e.target.value)} style={{ padding: '0.25rem 0.5rem', flex: '1 1 100px', height: '32px' }} placeholder="Category" />
+                            <input type="number" step="0.01" className="form-input" value={editInvPriceState} onChange={e => setEditInvPriceState(e.target.value)} style={{ padding: '0.25rem 0.5rem', flex: '1 1 80px', height: '32px' }} placeholder="Price" />
+                            <button onClick={() => handleSaveEditInventory(item.id)} className="btn btn-primary" style={{ padding: '0 0.75rem', width: 'auto', height: '32px', fontSize: '0.85rem' }}>Save</button>
+                            <button onClick={() => setEditingInvId(null)} className="btn" style={{ padding: '0 0.75rem', width: 'auto', background: 'transparent', border: '1px solid var(--border)', height: '32px', fontSize: '0.85rem' }}>Cancel</button>
+                          </div>
+                        ) : (
+                          <>
+                            <span>{item.name}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                              <strong>RM {parseFloat(item.price).toFixed(2)}</strong>
+                              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button onClick={() => { setEditingInvId(item.id); setEditInvNameState(item.name); setEditInvPriceState(item.price); setEditInvCategoryState(item.category || 'Services'); }} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '1.25rem' }}>&#9998;</button>
+                                <button onClick={() => handleDeleteInventory(item.id)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: '1.25rem' }}>&times;</button>
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </div>
-                    </>
-                  )}
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
@@ -763,6 +775,11 @@ export default function Admin() {
             <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', color: '#94a3b8' }}>Shop Caption</label>
             <input type="text" className="form-input" value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Select a date and time for your fresh cut." />
           </div>
+          
+          <h3 style={{ marginBottom: '1rem', borderTop: '1px solid var(--border)', paddingTop: '2rem', color: 'var(--danger)' }}>System Maintenance</h3>
+          <button className="btn" style={{ background: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)' }} onClick={handleInitDb}>
+            Initialize Database (Init DB)
+          </button>
         </div>
       )}
 
@@ -776,20 +793,32 @@ export default function Admin() {
             {inventory.length === 0 ? (
               <p style={{ color: 'var(--danger)' }}>Please add items to your inventory first.</p>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem', maxHeight: '250px', overflowY: 'auto' }}>
-                {inventory.map(item => (
-                  <label key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--secondary)', padding: '1rem', borderRadius: 'var(--radius)', cursor: 'pointer' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <input 
-                        type="checkbox" 
-                        style={{ width: '1.25rem', height: '1.25rem', accentColor: 'var(--accent)' }}
-                        checked={selectedItems[item.id] || false}
-                        onChange={(e) => setSelectedItems({...selectedItems, [item.id]: e.target.checked})}
-                      />
-                      <span>{item.name}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem', maxHeight: '350px', overflowY: 'auto' }}>
+                {Object.entries(inventory.reduce((acc, item) => {
+                  const cat = item.category || 'Services';
+                  if (!acc[cat]) acc[cat] = [];
+                  acc[cat].push(item);
+                  return acc;
+                }, {})).map(([categoryName, items]) => (
+                  <div key={categoryName}>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--accent)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{categoryName}</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      {items.map(item => (
+                        <label key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--secondary)', padding: '0.75rem 1rem', borderRadius: 'var(--radius)', cursor: 'pointer' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <input 
+                              type="checkbox" 
+                              style={{ width: '1.25rem', height: '1.25rem', accentColor: 'var(--accent)' }}
+                              checked={selectedItems[item.id] || false}
+                              onChange={(e) => setSelectedItems({...selectedItems, [item.id]: e.target.checked})}
+                            />
+                            <span>{item.name}</span>
+                          </div>
+                          <strong>RM {parseFloat(item.price).toFixed(2)}</strong>
+                        </label>
+                      ))}
                     </div>
-                    <strong>RM {parseFloat(item.price).toFixed(2)}</strong>
-                  </label>
+                  </div>
                 ))}
               </div>
             )}

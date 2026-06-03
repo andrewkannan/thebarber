@@ -14,14 +14,15 @@ export async function GET() {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { name, price } = body;
+    const { name, price, category } = body;
+    const cat = category || 'Services';
     if (!name || price === undefined) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
     }
 
     const res = await query(
-      'INSERT INTO inventory (name, price) VALUES ($1, $2) RETURNING *',
-      [name, price]
+      'INSERT INTO inventory (name, price, category) VALUES ($1, $2, $3) RETURNING *',
+      [name, price, cat]
     );
     return NextResponse.json({ success: true, item: res.rows[0] });
   } catch (err) {
@@ -47,14 +48,15 @@ export async function DELETE(request) {
 export async function PATCH(request) {
   try {
     const body = await request.json();
-    const { id, name, price } = body;
+    const { id, name, price, category } = body;
+    const cat = category || 'Services';
     if (!id || !name || price === undefined) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
     }
 
     const res = await query(
-      'UPDATE inventory SET name = $1, price = $2 WHERE id = $3 RETURNING *',
-      [name, price, id]
+      'UPDATE inventory SET name = $1, price = $2, category = $3 WHERE id = $4 RETURNING *',
+      [name, price, cat, id]
     );
     if (res.rows.length === 0) {
       return NextResponse.json({ error: 'Item not found' }, { status: 404 });

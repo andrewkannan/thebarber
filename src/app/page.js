@@ -185,7 +185,7 @@ export default function Home() {
       </div>
 
       <div className="text-center mb-8">
-        <h1>Sag The Barber</h1>
+        <h1>thebarber</h1>
         <p style={{ color: '#94a3b8' }}>Select a date and time for your fresh cut.</p>
       </div>
 

@@ -508,7 +508,7 @@ export default function Admin() {
             <input type="url" className="form-input" value={gmapUrl} onChange={(e) => setGmapUrl(e.target.value)} placeholder="https://maps.app.goo.gl/..." />
           </div>
           <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', color: '#94a3b8' }}>Phone Number (for calling)</label>
+            <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', color: '#94a3b8' }}>WhatsApp Number</label>
             <input type="tel" className="form-input" value={phoneLink} onChange={(e) => setPhoneLink(e.target.value)} placeholder="+60123456789" />
           </div>
         </div>

@@ -45,6 +45,8 @@ export default function Admin() {
   const [wazeUrl, setWazeUrl] = useState('');
   const [gmapUrl, setGmapUrl] = useState('');
   const [phoneLink, setPhoneLink] = useState('');
+  const [phoneCall, setPhoneCall] = useState('');
+  const [caption, setCaption] = useState('Select a date and time for your fresh cut.');
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   // Edit Booking state
@@ -79,6 +81,8 @@ export default function Admin() {
         if (sData.settings.waze_url) setWazeUrl(sData.settings.waze_url);
         if (sData.settings.gmap_url) setGmapUrl(sData.settings.gmap_url);
         if (sData.settings.phone_link) setPhoneLink(sData.settings.phone_link);
+        if (sData.settings.phone_call) setPhoneCall(sData.settings.phone_call);
+        if (sData.settings.caption) setCaption(sData.settings.caption);
       }
     } catch (err) {
       console.error(err);
@@ -479,7 +483,9 @@ export default function Admin() {
                       wa_template: waTemplate,
                       waze_url: wazeUrl,
                       gmap_url: gmapUrl,
-                      phone_link: phoneLink
+                      phone_link: phoneLink,
+                      phone_call: phoneCall,
+                      caption: caption
                     }
                   })
                 });
@@ -507,9 +513,17 @@ export default function Admin() {
             <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', color: '#94a3b8' }}>Google Maps URL</label>
             <input type="url" className="form-input" value={gmapUrl} onChange={(e) => setGmapUrl(e.target.value)} placeholder="https://maps.app.goo.gl/..." />
           </div>
-          <div style={{ marginBottom: '1.5rem' }}>
+          <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', color: '#94a3b8' }}>WhatsApp Number</label>
             <input type="tel" className="form-input" value={phoneLink} onChange={(e) => setPhoneLink(e.target.value)} placeholder="+60123456789" />
+          </div>
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', color: '#94a3b8' }}>Phone Call Number</label>
+            <input type="tel" className="form-input" value={phoneCall} onChange={(e) => setPhoneCall(e.target.value)} placeholder="+60123456789" />
+          </div>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', color: '#94a3b8' }}>Shop Caption</label>
+            <input type="text" className="form-input" value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Select a date and time for your fresh cut." />
           </div>
         </div>
       )}

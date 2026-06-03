@@ -42,6 +42,9 @@ export default function Admin() {
 
   // Settings state
   const [waTemplate, setWaTemplate] = useState('Hi #name, your slot on #date at #time is confirmed! See you then.');
+  const [wazeUrl, setWazeUrl] = useState('');
+  const [gmapUrl, setGmapUrl] = useState('');
+  const [phoneLink, setPhoneLink] = useState('');
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   // Edit Booking state
@@ -71,8 +74,11 @@ export default function Admin() {
       setBookings(bData.bookings || []);
       setOverrides(oData.overrides || []);
       setInventory(iData.inventory || []);
-      if (sData.settings && sData.settings.wa_template) {
-        setWaTemplate(sData.settings.wa_template);
+      if (sData.settings) {
+        if (sData.settings.wa_template) setWaTemplate(sData.settings.wa_template);
+        if (sData.settings.waze_url) setWazeUrl(sData.settings.waze_url);
+        if (sData.settings.gmap_url) setGmapUrl(sData.settings.gmap_url);
+        if (sData.settings.phone_link) setPhoneLink(sData.settings.phone_link);
       }
     } catch (err) {
       console.error(err);
@@ -468,7 +474,14 @@ export default function Admin() {
                 await fetch('/api/settings', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ key: 'wa_template', value: waTemplate })
+                  body: JSON.stringify({ 
+                    settings: {
+                      wa_template: waTemplate,
+                      waze_url: wazeUrl,
+                      gmap_url: gmapUrl,
+                      phone_link: phoneLink
+                    }
+                  })
                 });
                 alert('Settings saved!');
               } catch (e) {
@@ -477,10 +490,27 @@ export default function Admin() {
               setIsSavingSettings(false);
             }}
             disabled={isSavingSettings}
-            style={{ width: 'auto' }}
+            style={{ width: '100%', marginBottom: '2rem' }}
           >
-            {isSavingSettings ? 'Saving...' : 'Save Template'}
+            {isSavingSettings ? 'Saving...' : 'Save Settings'}
           </button>
+
+          <h3 style={{ marginBottom: '1rem', borderTop: '1px solid var(--border)', paddingTop: '2rem' }}>Shop Location & Contact</h3>
+          <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+            Add links to show quick-access icons on the customer booking page. Leave blank to hide the icon.
+          </p>
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', color: '#94a3b8' }}>Waze URL</label>
+            <input type="url" className="form-input" value={wazeUrl} onChange={(e) => setWazeUrl(e.target.value)} placeholder="https://waze.com/ul/..." />
+          </div>
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', color: '#94a3b8' }}>Google Maps URL</label>
+            <input type="url" className="form-input" value={gmapUrl} onChange={(e) => setGmapUrl(e.target.value)} placeholder="https://maps.app.goo.gl/..." />
+          </div>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', color: '#94a3b8' }}>Phone Number (for calling)</label>
+            <input type="tel" className="form-input" value={phoneLink} onChange={(e) => setPhoneLink(e.target.value)} placeholder="+60123456789" />
+          </div>
         </div>
       )}
 

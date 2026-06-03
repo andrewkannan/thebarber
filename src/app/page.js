@@ -48,6 +48,20 @@ export default function Home() {
   const [myBookings, setMyBookings] = useState([]);
   const [loadingMyBookings, setLoadingMyBookings] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [shopSettings, setShopSettings] = useState({});
+
+  useEffect(() => {
+    async function fetchSettings() {
+      try {
+        const res = await fetch('/api/settings?public=true');
+        const data = await res.json();
+        setShopSettings(data.settings || {});
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    fetchSettings();
+  }, []);
 
   useEffect(() => {
     async function fetchSlots() {
@@ -185,7 +199,27 @@ export default function Home() {
       </div>
 
       <div className="text-center mb-8">
-        <h1>thebarber</h1>
+        <h1 style={{ marginBottom: (shopSettings.waze_url || shopSettings.gmap_url || shopSettings.phone_link) ? '1.5rem' : '0' }}>thebarber</h1>
+        
+        {(shopSettings.waze_url || shopSettings.gmap_url || shopSettings.phone_link) && (
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+            {shopSettings.waze_url && (
+              <a href={shopSettings.waze_url} target="_blank" rel="noopener noreferrer" title="Navigate with Waze" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '45px', height: '45px', background: 'var(--secondary)', borderRadius: '50%', color: 'var(--text)', transition: 'transform 0.2s' }}>
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M21 3L3 10.53v.98l6.84 2.65L12.48 21h.98L21 3z"/></svg>
+              </a>
+            )}
+            {shopSettings.gmap_url && (
+              <a href={shopSettings.gmap_url} target="_blank" rel="noopener noreferrer" title="Open in Google Maps" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '45px', height: '45px', background: 'var(--secondary)', borderRadius: '50%', color: 'var(--text)', transition: 'transform 0.2s' }}>
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+              </a>
+            )}
+            {shopSettings.phone_link && (
+              <a href={`tel:${shopSettings.phone_link.replace(/[^0-9+]/g, '')}`} title="Call Shop" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '45px', height: '45px', background: 'var(--secondary)', borderRadius: '50%', color: 'var(--text)', transition: 'transform 0.2s' }}>
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56-.35-.12-.74-.03-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z"/></svg>
+              </a>
+            )}
+          </div>
+        )}
         <p style={{ color: '#94a3b8' }}>Select a date and time for your fresh cut.</p>
       </div>
 

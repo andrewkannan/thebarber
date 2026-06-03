@@ -519,10 +519,10 @@ export default function Admin() {
             {slotsSubTab === 'weekly' && (
               <div>
                 <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem' }}>Set your standard working hours. These act as the default available slots for every week.</p>
-                <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '1rem', marginBottom: '1rem' }}>
+                <div className="date-selector" style={{ marginBottom: '1.5rem' }}>
                   {['0','1','2','3','4','5','6'].map(d => (
-                    <button key={d} className="btn" style={{ flexShrink: 0, padding: '0.5rem 1rem', background: selectedDay === d ? 'var(--secondary)' : 'transparent', border: '1px solid var(--border)', color: selectedDay === d ? 'var(--accent)' : 'var(--text)' }} onClick={() => setSelectedDay(d)}>
-                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]}
+                    <button key={d} className={`date-btn ${selectedDay === d ? 'active' : ''}`} style={{ minWidth: '70px', padding: '0.75rem 0' }} onClick={() => setSelectedDay(d)}>
+                      <span className="date-num" style={{ fontSize: '1rem', marginBottom: 0 }}>{['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]}</span>
                     </button>
                   ))}
                 </div>

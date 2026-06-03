@@ -47,6 +47,9 @@ export default function Admin() {
   // Inventory state
   const [invName, setInvName] = useState('');
   const [invPrice, setInvPrice] = useState('');
+  const [editingInvId, setEditingInvId] = useState(null);
+  const [editInvNameState, setEditInvNameState] = useState('');
+  const [editInvPriceState, setEditInvPriceState] = useState('');
 
   // Billing Modal state
   const [billingBooking, setBillingBooking] = useState(null);
@@ -282,6 +285,22 @@ export default function Admin() {
     } catch (err) {}
   };
 
+  const handleSaveEditInventory = async (id) => {
+    if (!editInvNameState || !editInvPriceState) return;
+    try {
+      const res = await fetch('/api/inventory', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, name: editInvNameState, price: parseFloat(editInvPriceState) })
+      });
+      if (res.ok) {
+        setEditingInvId(null);
+        fetchData();
+      }
+    } catch (err) {}
+  };
+
+
   const handleAddOverride = async (e) => {
     e.preventDefault();
     if (!overrideDate || !overrideTime) return;
@@ -496,11 +515,25 @@ export default function Admin() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {inventory.map(item => (
                 <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--secondary)', padding: '0.75rem 1rem', borderRadius: 'var(--radius)' }}>
-                  <span>{item.name}</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <strong>RM {parseFloat(item.price).toFixed(2)}</strong>
-                    <button onClick={() => handleDeleteInventory(item.id)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: '1.25rem' }}>&times;</button>
-                  </div>
+                  {editingInvId === item.id ? (
+                    <div style={{ display: 'flex', gap: '0.5rem', width: '100%', alignItems: 'center' }}>
+                      <input type="text" className="form-input" value={editInvNameState} onChange={e => setEditInvNameState(e.target.value)} style={{ padding: '0.25rem 0.5rem', flex: 2, height: '32px' }} />
+                      <input type="number" step="0.01" className="form-input" value={editInvPriceState} onChange={e => setEditInvPriceState(e.target.value)} style={{ padding: '0.25rem 0.5rem', flex: 1, height: '32px' }} />
+                      <button onClick={() => handleSaveEditInventory(item.id)} className="btn btn-primary" style={{ padding: '0 0.75rem', width: 'auto', height: '32px', fontSize: '0.85rem' }}>Save</button>
+                      <button onClick={() => setEditingInvId(null)} className="btn" style={{ padding: '0 0.75rem', width: 'auto', background: 'transparent', border: '1px solid var(--border)', height: '32px', fontSize: '0.85rem' }}>Cancel</button>
+                    </div>
+                  ) : (
+                    <>
+                      <span>{item.name}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <strong>RM {parseFloat(item.price).toFixed(2)}</strong>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button onClick={() => { setEditingInvId(item.id); setEditInvNameState(item.name); setEditInvPriceState(item.price); }} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '1.25rem' }}>&#9998;</button>
+                          <button onClick={() => handleDeleteInventory(item.id)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: '1.25rem' }}>&times;</button>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               ))}
             </div>

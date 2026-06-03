@@ -43,3 +43,26 @@ export async function DELETE(request) {
     return NextResponse.json({ error: 'Database error' }, { status: 500 });
   }
 }
+
+export async function PATCH(request) {
+  try {
+    const body = await request.json();
+    const { id, name, price } = body;
+    if (!id || !name || price === undefined) {
+      return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+    }
+
+    const res = await query(
+      'UPDATE inventory SET name = $1, price = $2 WHERE id = $3 RETURNING *',
+      [name, price, id]
+    );
+    if (res.rows.length === 0) {
+      return NextResponse.json({ error: 'Item not found' }, { status: 404 });
+    }
+    return NextResponse.json({ success: true, item: res.rows[0] });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: 'Database error' }, { status: 500 });
+  }
+}
+

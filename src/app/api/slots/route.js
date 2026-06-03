@@ -17,6 +17,26 @@ export async function GET(request) {
   }
 
   try {
+    // Determine day of the week
+    const d = new Date(date);
+    const dayOfWeek = d.getDay().toString(); // 0 (Sun) to 6 (Sat)
+    
+    // Fetch base slots for this day from settings
+    let baseSlots = ALL_SLOTS;
+    try {
+      const sRes = await query("SELECT value FROM settings WHERE key = 'weekly_schedule'");
+      if (sRes.rows.length > 0) {
+        const schedule = JSON.parse(sRes.rows[0].value);
+        if (schedule && schedule[dayOfWeek]) {
+          baseSlots = schedule[dayOfWeek];
+        } else {
+          baseSlots = []; // If weekly schedule exists but day is empty, default to no slots
+        }
+      }
+    } catch (e) {
+      // settings or json parse error, ignore and use legacy
+    }
+
     const res = await query('SELECT time_slot FROM bookings WHERE date_string = $1', [date]);
     const bookedSlots = res.rows.map(row => row.time_slot);
 
@@ -31,7 +51,7 @@ export async function GET(request) {
       // overrides table might not exist yet if not initialized, ignore safely
     }
 
-    let finalSlots = [...new Set([...ALL_SLOTS, ...addedSlots])];
+    let finalSlots = [...new Set([...baseSlots, ...addedSlots])];
     
     // Sort chronologically
     finalSlots.sort((a, b) => {

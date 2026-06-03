@@ -2,6 +2,18 @@
 
 import { useState, useEffect, useMemo } from 'react';
 
+const ALL_SLOTS = [
+  "09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM",
+  "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM",
+  "01:00 PM", "01:30 PM", "02:00 PM", "02:30 PM",
+  "03:00 PM", "03:30 PM", "04:00 PM", "04:30 PM", "05:00 PM"
+];
+
+const DEFAULT_SCHEDULE = {
+  "0": [...ALL_SLOTS], "1": [...ALL_SLOTS], "2": [...ALL_SLOTS], "3": [...ALL_SLOTS],
+  "4": [...ALL_SLOTS], "5": [...ALL_SLOTS], "6": [...ALL_SLOTS]
+};
+
 const generateDates = () => {
   const dates = [];
   const today = new Date();
@@ -56,6 +68,17 @@ export default function Admin() {
 
   const [activeTab, setActiveTab] = useState('bookings');
 
+  // Slots UI state
+  const [slotsSubTab, setSlotsSubTab] = useState('weekly');
+  const [weeklySchedule, setWeeklySchedule] = useState(DEFAULT_SCHEDULE);
+  const [selectedDay, setSelectedDay] = useState("1"); // 1 = Monday
+  const [weeklyCustomSlot, setWeeklyCustomSlot] = useState('');
+  const [isSavingSchedule, setIsSavingSchedule] = useState(false);
+
+  // Specific Date UI state
+  const [specificDate, setSpecificDate] = useState(dates[0].fullString);
+  const [specificDateSlots, setSpecificDateSlots] = useState([]);
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -83,6 +106,11 @@ export default function Admin() {
         if (sData.settings.phone_link) setPhoneLink(sData.settings.phone_link);
         if (sData.settings.phone_call) setPhoneCall(sData.settings.phone_call);
         if (sData.settings.caption) setCaption(sData.settings.caption);
+        if (sData.settings.weekly_schedule) {
+          try {
+            setWeeklySchedule(JSON.parse(sData.settings.weekly_schedule));
+          } catch(e) {}
+        }
       }
     } catch (err) {
       console.error(err);
@@ -104,6 +132,57 @@ export default function Admin() {
       .filter(b => b.status === 'COMPLETED')
       .reduce((sum, b) => sum + parseFloat(b.total_price || 0), 0);
   }, [todaysBookings]);
+
+  useEffect(() => {
+    async function fetchSpecificDate() {
+      if (activeTab !== 'overrides' || slotsSubTab !== 'specific') return;
+      try {
+        const [slotsRes, bRes, oRes] = await Promise.all([
+          fetch(`/api/slots?date=${specificDate}`),
+          fetch(`/api/bookings`),
+          fetch(`/api/admin/overrides`)
+        ]);
+        const sData = await slotsRes.json();
+        const bData = await bRes.json();
+        const oData = await oRes.json();
+
+        const dayBookings = (bData.bookings || []).filter(b => b.date_string === specificDate && b.status !== 'CANCELLED');
+        const bookedTimeSlots = new Set(dayBookings.map(b => b.time_slot));
+
+        const dayOverrides = (oData.overrides || []).filter(o => o.date_string === specificDate);
+        const blockedTimeSlots = new Set(dayOverrides.filter(o => o.override_type === 'BLOCKED').map(o => o.time_slot));
+        const addedTimeSlots = new Set(dayOverrides.filter(o => o.override_type === 'ADDED').map(o => o.time_slot));
+
+        const d = new Date(specificDate);
+        const dayOfWeek = d.getDay().toString();
+        const base = weeklySchedule[dayOfWeek] || [];
+
+        let allDisplay = [...new Set([...base, ...addedTimeSlots, ...bookedTimeSlots, ...blockedTimeSlots])];
+        
+        allDisplay.sort((a, b) => {
+          const parseTime = (t) => {
+            const [time, period] = t.split(' ');
+            let [h, m] = time.split(':').map(Number);
+            if (period === 'PM' && h !== 12) h += 12;
+            if (period === 'AM' && h === 12) h = 0;
+            return h * 60 + m;
+          };
+          return parseTime(a) - parseTime(b);
+        });
+
+        const computed = allDisplay.map(slot => {
+          if (bookedTimeSlots.has(slot)) return { slot, status: 'BOOKED' };
+          if (blockedTimeSlots.has(slot)) return { slot, status: 'BLOCKED' };
+          return { slot, status: 'AVAILABLE' };
+        });
+
+        setSpecificDateSlots(computed);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    fetchSpecificDate();
+  }, [specificDate, activeTab, slotsSubTab, weeklySchedule, overrides, bookings]);
 
   const handleInitDb = async () => {
     try {
@@ -419,41 +498,152 @@ export default function Admin() {
       )}
 
       {activeTab === 'overrides' && (
-        <div className="glass-panel" style={{ padding: '1.5rem' }}>
-          <h2 style={{ marginBottom: '1.5rem' }}>Add or Block a Slot</h2>
-          <form onSubmit={handleAddOverride} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
-            <div>
-              <label className="form-label">Date (YYYY-MM-DD)</label>
-              <input type="date" className="form-input" value={overrideDate} onChange={e => setOverrideDate(e.target.value)} required />
-            </div>
-            <div>
-              <label className="form-label">Time String (e.g. 10:15 AM)</label>
-              <input type="text" className="form-input" value={overrideTime} onChange={e => setOverrideTime(e.target.value)} placeholder="10:15 AM" required />
-            </div>
-            <div>
-              <label className="form-label">Action</label>
-              <select className="form-input" value={overrideType} onChange={e => setOverrideType(e.target.value)}>
-                <option value="ADDED">Add Custom Slot</option>
-                <option value="BLOCKED">Block Time Slot</option>
-              </select>
-            </div>
-            <button type="submit" className="btn btn-primary">Save</button>
-          </form>
-
-          <h3 style={{ marginBottom: '1rem' }}>Active Overrides</h3>
-          {overrides.length === 0 ? <p style={{ color: '#94a3b8' }}>No overrides set.</p> : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {overrides.map(o => (
-                <div key={o.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--secondary)', padding: '0.75rem', borderRadius: 'var(--radius)' }}>
-                  <div style={{ fontSize: '0.85rem' }}>
-                    <span className="badge" style={{ background: o.override_type === 'ADDED' ? 'rgba(56,189,248,0.1)' : 'rgba(239,68,68,0.1)', color: o.override_type === 'ADDED' ? 'var(--accent)' : 'var(--danger)', marginRight: '0.5rem' }}>{o.override_type}</span>
-                    <strong>{o.date_string}</strong> {o.time_slot}
-                  </div>
-                  <button className="btn" style={{ background: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)', width: 'auto', padding: '0.25rem 0.5rem', fontSize: '0.75rem' }} onClick={() => handleDeleteOverride(o.id)}>Del</button>
+        <div className="glass-panel" style={{ padding: '0' }}>
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--border)' }}>
+            <button className="btn" style={{ flex: 1, borderRadius: 'var(--radius) 0 0 0', background: slotsSubTab === 'weekly' ? 'var(--accent)' : 'transparent', color: slotsSubTab === 'weekly' ? '#fff' : 'var(--text)', border: 'none' }} onClick={() => setSlotsSubTab('weekly')}>Weekly Defaults</button>
+            <button className="btn" style={{ flex: 1, borderRadius: '0 var(--radius) 0 0', background: slotsSubTab === 'specific' ? 'var(--accent)' : 'transparent', color: slotsSubTab === 'specific' ? '#fff' : 'var(--text)', border: 'none' }} onClick={() => setSlotsSubTab('specific')}>Specific Date</button>
+          </div>
+          
+          <div style={{ padding: '1.5rem' }}>
+            {slotsSubTab === 'weekly' && (
+              <div>
+                <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem' }}>Set your standard working hours. These act as the default available slots for every week.</p>
+                <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '1rem', marginBottom: '1rem' }}>
+                  {['0','1','2','3','4','5','6'].map(d => (
+                    <button key={d} className="btn" style={{ flexShrink: 0, padding: '0.5rem 1rem', background: selectedDay === d ? 'var(--secondary)' : 'transparent', border: '1px solid var(--border)', color: selectedDay === d ? 'var(--accent)' : 'var(--text)' }} onClick={() => setSelectedDay(d)}>
+                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]}
+                    </button>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                  {(() => {
+                    const currentSlots = weeklySchedule[selectedDay] || [];
+                    const allPossible = [...new Set([...ALL_SLOTS, ...currentSlots])].sort((a, b) => {
+                      const parseTime = (t) => {
+                        const [time, period] = t.split(' ');
+                        let [h, m] = time.split(':').map(Number);
+                        if (period === 'PM' && h !== 12) h += 12;
+                        if (period === 'AM' && h === 12) h = 0;
+                        return h * 60 + m;
+                      };
+                      return parseTime(a) - parseTime(b);
+                    });
+
+                    return allPossible.map(slot => {
+                      const isActive = currentSlots.includes(slot);
+                      return (
+                        <div key={slot} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--secondary)', padding: '0.75rem 1rem', borderRadius: 'var(--radius)' }}>
+                          <strong>{slot}</strong>
+                          <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                            <input type="checkbox" style={{ display: 'none' }} checked={isActive} onChange={(e) => {
+                              const newSlots = e.target.checked ? [...currentSlots, slot] : currentSlots.filter(s => s !== slot);
+                              setWeeklySchedule({ ...weeklySchedule, [selectedDay]: newSlots });
+                            }} />
+                            <div style={{ width: '40px', height: '22px', background: isActive ? 'var(--accent)' : 'var(--border)', borderRadius: '11px', position: 'relative', transition: 'background 0.3s' }}>
+                              <div style={{ width: '18px', height: '18px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '2px', left: isActive ? '20px' : '2px', transition: 'left 0.3s' }} />
+                            </div>
+                          </label>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+                  <input type="text" className="form-input" placeholder="e.g. 08:15 AM" value={weeklyCustomSlot} onChange={e => setWeeklyCustomSlot(e.target.value)} />
+                  <button className="btn btn-primary" style={{ width: 'auto', padding: '0 1rem' }} onClick={() => {
+                    if (!weeklyCustomSlot) return;
+                    const currentSlots = weeklySchedule[selectedDay] || [];
+                    if (!currentSlots.includes(weeklyCustomSlot)) {
+                      setWeeklySchedule({ ...weeklySchedule, [selectedDay]: [...currentSlots, weeklyCustomSlot] });
+                    }
+                    setWeeklyCustomSlot('');
+                  }}>+</button>
+                </div>
+
+                <button className="btn btn-primary" style={{ width: '100%' }} disabled={isSavingSchedule} onClick={async () => {
+                  setIsSavingSchedule(true);
+                  try {
+                    await fetch('/api/settings', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ settings: { weekly_schedule: JSON.stringify(weeklySchedule) } })
+                    });
+                    alert('Weekly schedule saved!');
+                    fetchData();
+                  } catch (e) {
+                    alert('Failed to save');
+                  }
+                  setIsSavingSchedule(false);
+                }}>
+                  {isSavingSchedule ? 'Saving...' : 'Save Weekly Defaults'}
+                </button>
+              </div>
+            )}
+
+            {slotsSubTab === 'specific' && (
+              <div>
+                <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem' }}>Select a date below to override specific slots. Booked slots are locked and cannot be disabled here.</p>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <input type="date" className="form-input" value={specificDate} onChange={e => setSpecificDate(e.target.value)} />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                  {specificDateSlots.length === 0 && <p style={{ color: '#94a3b8' }}>No slots available for this day.</p>}
+                  {specificDateSlots.map(({ slot, status }) => {
+                    const isBooked = status === 'BOOKED';
+                    const isActive = status === 'AVAILABLE';
+                    return (
+                      <div key={slot} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--secondary)', padding: '0.75rem 1rem', borderRadius: 'var(--radius)', opacity: isBooked ? 0.6 : 1 }}>
+                        <div>
+                          <strong>{slot}</strong>
+                          {isBooked && <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: 'var(--danger)' }}>(Booked)</span>}
+                        </div>
+                        <label style={{ display: 'flex', alignItems: 'center', cursor: isBooked ? 'not-allowed' : 'pointer' }}>
+                          <input type="checkbox" style={{ display: 'none' }} disabled={isBooked} checked={isActive || isBooked} onChange={async (e) => {
+                            const newActive = e.target.checked;
+                            try {
+                              if (newActive) {
+                                // Admin wants to re-enable a blocked slot
+                                await fetch(`/api/admin/overrides?date=${specificDate}&time=${slot}`, { method: 'DELETE' });
+                              } else {
+                                // Admin wants to block a slot
+                                await fetch('/api/admin/overrides', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ date_string: specificDate, time_slot: slot, override_type: 'BLOCKED' })
+                                });
+                              }
+                              fetchData();
+                            } catch (err) {}
+                          }} />
+                          <div style={{ width: '40px', height: '22px', background: (isActive || isBooked) ? (isBooked ? '#94a3b8' : 'var(--accent)') : 'var(--border)', borderRadius: '11px', position: 'relative', transition: 'background 0.3s' }}>
+                            <div style={{ width: '18px', height: '18px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '2px', left: (isActive || isBooked) ? '20px' : '2px', transition: 'left 0.3s' }} />
+                          </div>
+                        </label>
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!overrideTime) return;
+                  await fetch('/api/admin/overrides', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ date_string: specificDate, time_slot: overrideTime, override_type: 'ADDED' })
+                  });
+                  setOverrideTime('');
+                  fetchData();
+                }} style={{ display: 'flex', gap: '1rem' }}>
+                  <input type="text" className="form-input" placeholder="Add custom slot (e.g. 08:15 AM)" value={overrideTime} onChange={e => setOverrideTime(e.target.value)} />
+                  <button type="submit" className="btn btn-primary" style={{ width: 'auto', padding: '0 1rem' }}>+</button>
+                </form>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

@@ -64,6 +64,12 @@ export default function Admin() {
   const [phoneLink, setPhoneLink] = useState('');
   const [phoneCall, setPhoneCall] = useState('');
   const [caption, setCaption] = useState('Select a date and time for your fresh cut.');
+  const [barberName, setBarberName] = useState('');
+  const [barberBio, setBarberBio] = useState('');
+  const [barberPhotoUrl, setBarberPhotoUrl] = useState('');
+  const [shopAddress, setShopAddress] = useState('');
+  const [shopHours, setShopHours] = useState('');
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   // Edit Booking state
@@ -86,7 +92,26 @@ export default function Admin() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate]);
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setIsUploadingPhoto(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.url) setBarberPhotoUrl(data.url);
+      else alert(data.error || 'Upload failed');
+    } catch(err) {
+      alert("Failed to upload photo");
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
 
   async function fetchData() {
     setLoading(true);
@@ -111,6 +136,11 @@ export default function Admin() {
         if (sData.settings.phone_link) setPhoneLink(sData.settings.phone_link);
         if (sData.settings.phone_call) setPhoneCall(sData.settings.phone_call);
         if (sData.settings.caption) setCaption(sData.settings.caption);
+        if (sData.settings.barber_name) setBarberName(sData.settings.barber_name);
+        if (sData.settings.barber_bio) setBarberBio(sData.settings.barber_bio);
+        if (sData.settings.barber_photo_url) setBarberPhotoUrl(sData.settings.barber_photo_url);
+        if (sData.settings.shop_address) setShopAddress(sData.settings.shop_address);
+        if (sData.settings.shop_hours) setShopHours(sData.settings.shop_hours);
         if (sData.settings.weekly_schedule) {
           try {
             setWeeklySchedule(JSON.parse(sData.settings.weekly_schedule));
@@ -735,7 +765,12 @@ export default function Admin() {
                       gmap_url: gmapUrl,
                       phone_link: phoneLink,
                       phone_call: phoneCall,
-                      caption: caption
+                      caption: caption,
+                      barber_name: barberName,
+                      barber_bio: barberBio,
+                      barber_photo_url: barberPhotoUrl,
+                      shop_address: shopAddress,
+                      shop_hours: shopHours
                     }
                   })
                 });
@@ -750,6 +785,24 @@ export default function Admin() {
           >
             {isSavingSettings ? 'Saving...' : 'Save Settings'}
           </button>
+
+          <h3 style={{ marginBottom: '1rem', borderTop: '1px solid var(--border)', paddingTop: '2rem' }}>Meet the Barber</h3>
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', color: '#94a3b8' }}>Barber Name</label>
+            <input type="text" className="form-input" value={barberName} onChange={(e) => setBarberName(e.target.value)} placeholder="e.g. John Doe" />
+          </div>
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', color: '#94a3b8' }}>Barber Bio</label>
+            <textarea className="form-input" value={barberBio} onChange={(e) => setBarberBio(e.target.value)} placeholder="A short welcome message..." rows={3} />
+          </div>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', color: '#94a3b8' }}>Barber Photo</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              {barberPhotoUrl && <img src={barberPhotoUrl} alt="Barber" style={{ width: '50px', height: '50px', borderRadius: '50%', objectFit: 'cover' }} />}
+              <input type="file" accept="image/*" onChange={handlePhotoUpload} disabled={isUploadingPhoto} style={{ color: 'var(--text)' }} />
+              {isUploadingPhoto && <span className="spinner" style={{ width: '16px', height: '16px' }}></span>}
+            </div>
+          </div>
 
           <h3 style={{ marginBottom: '1rem', borderTop: '1px solid var(--border)', paddingTop: '2rem' }}>Shop Location & Contact</h3>
           <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
@@ -774,6 +827,14 @@ export default function Admin() {
           <div style={{ marginBottom: '1.5rem' }}>
             <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', color: '#94a3b8' }}>Shop Caption</label>
             <input type="text" className="form-input" value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Select a date and time for your fresh cut." />
+          </div>
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', color: '#94a3b8' }}>Shop Address</label>
+            <textarea className="form-input" value={shopAddress} onChange={(e) => setShopAddress(e.target.value)} placeholder="123 Barber Street..." rows={2} />
+          </div>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', color: '#94a3b8' }}>Shop Hours</label>
+            <textarea className="form-input" value={shopHours} onChange={(e) => setShopHours(e.target.value)} placeholder="Mon-Fri: 9am - 8pm&#10;Sat-Sun: 10am - 6pm" rows={2} />
           </div>
           
           <h3 style={{ marginBottom: '1rem', borderTop: '1px solid var(--border)', paddingTop: '2rem', color: 'var(--danger)' }}>System Maintenance</h3>
